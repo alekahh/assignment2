@@ -26,7 +26,8 @@ class HMMFilter:
             updated_belief = predicted_belief
 
         # Normalize the belief
-        self.__f = updated_belief / np.sum(updated_belief)
+        #self.__f = updated_belief / np.sum(updated_belief)
+        self.__f = updated_belief / np.sum(updated_belief) if np.sum(updated_belief) > 0 else np.ones_like(updated_belief) / len(updated_belief)
         return self.__f
 
 
@@ -51,7 +52,7 @@ class HMMSmoother:
             b = np.dot(self.__tm.get_T(), observation_matrix @ b)
             b_sum = np.sum(b)
             if b_sum == 0:
-                b = np.ones(f_k.shape)  # Reset to ones if sum is zero to avoid division by zero
+                b = np.full(f_k.shape, 1e-10) # Fill b with tiny, uniform probabilites (Prevents zero-probability states while maintaining small influence.)
             else:
                 b /= b_sum  # Normalize
 

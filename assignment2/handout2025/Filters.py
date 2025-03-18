@@ -6,6 +6,7 @@ from models import *
 #
 # Add your Filtering / Smoothing approach(es) here
 #
+
 class HMMFilter:
     def __init__(self, probs, tm, om, sm):
         self.__tm = tm
@@ -32,40 +33,28 @@ class HMMFilter:
 
 
 class HMMSmoother:
-    def __init__(self, tm, om, sm, window_size=5):
+    
+    def __init__(self, tm, om, sm):
         self.__tm = tm
         self.__om = om
         self.__sm = sm
-        
-        # things for sliding window
-        self.window_size = window_size
-        self.window = []
 
-    def update_window(self, new_reading):
-        self.window.append(new_reading)
-        if len(self.window) > self.window_size:
-            self.window.pop(0)
-
-    def smooth(self, f_k : np.array) -> np.array:
-        """
+    def smooth(self, sensor_r_seq : np.array, f_k : np.array) -> np.array:
+        """sensor_r_seq is the sequence (array) with the t-k sensor readings for smoothing, 
         f_k is the filtered result (f_vector) for step k
-        fb is the smoothed result (fb_vector)
-        """
-        # window has closed, no more data
-        if not self.window:
-            return f_k
-
+        fb is the smoothed result (fb_vector)"""
+        
         # Initialize the backward message
         b = np.ones(f_k.shape)
         
         # Iterate over the sensor readings in reverse order
-        for sensorR in reversed(self.window):
+        for sensorR in reversed(sensor_r_seq):
             # Update the backward message
             observation_matrix = self.__om.get_o_reading(sensorR)
             b = np.dot(self.__tm.get_T(), observation_matrix @ b)
             b_sum = np.sum(b)
-            if 0 <= b_sum <= 1e-3:
-                b = np.full(f_k.shape, 1e-10) # Fill b with tiny, uniform probabilities (Prevents zero-probability states while maintaining small influence.)
+            if b_sum == 0:
+                b = np.full(f_k.shape, 1e-10) # Fill b with tiny, uniform probabilites (Prevents zero-probability states while maintaining small influence.)
             else:
                 b /= b_sum  # Normalize
 
